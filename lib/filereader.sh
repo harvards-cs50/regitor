@@ -1,7 +1,5 @@
 # filename = details.txt
-# ${@:2} = keys
-
-
+# $@ = keys
 
 if [[ ! -z $(tail -1c details.txt) ]]; then echo "" >> details.txt; fi
 
