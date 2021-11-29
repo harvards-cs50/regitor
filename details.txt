@@ -1,3 +1,6 @@
-port = a
-auth = 0
-username = hi
+name = registry
+port = 5000:5000
+cert = yes
+auth = yes
+username = admin
+password = admin
