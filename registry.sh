@@ -1,7 +1,7 @@
 cpath=$(dirname "$0")
 
 options=(
-    -nr
+    -n
 )
 
 commands=(
