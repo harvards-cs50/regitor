@@ -23,7 +23,7 @@ conditions=(
 
 commands=(
     'mv $tempdir "$value";'
-    'echo -e "docker run -d -p $port --restart=always --name $name \\" >> $name/executor.sh;'
+    'echo -e "docker run -d \\ \n-p $port \\ \n--restart=always \\ \n--name $name \\" >> $name/executor.sh;'
     'if [[ "(y ye yes)" =~ ${value,,} ]]; then cert="yes"; bash $cpath/create_cert.sh $name; else cert="no"; fi'
     'if [[ "(y ye yes)" =~ ${value,,} ]]; then auth="yes"; else auth="no"; fi'
     ''
