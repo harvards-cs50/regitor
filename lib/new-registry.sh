@@ -1,121 +1,43 @@
 cpath=$(dirname "$0")
 
-mkdir -p newregistry/data.txt
-echo -e 'name = ""\nport = ""\ncert = ""\nauth = ""\nusername = ""\npassword = ""' >> newregistry/data.txt
+tempdir=$(openssl rand -hex 12)
+mkdir $tempdir
 
-keys=(name port cert auth username password)
-for i in $(seq ${#keys[@]}); do values[$i-1]=""; done
+keys=(
+    name 
+    port 
+    cert 
+    auth 
+    username 
+    password
+)
 
-reqReader[0]() { 
-    while [[ ! "${values[0]}" =~ [a-zA-Z0-9] || -z "${values[0]}" || -d "${values[0]}" ]];
-    do
-        read -p "Name of new Registry : " values[0]; 
-    done
-}
+conditions=(
+    '[[ "$value" =~ [a-zA-Z0-9]+$ && ! -d "$value" ]]'
+    '[[ "$value" =~ [0-9]:[0-9]+$ ]]'
+    '[[ "(y ye yes n no)" =~ "${value,,}" ]]'
+    '[[ "(y ye yes n no)" =~ "${value,,}" ]]'
+    '[[ "$value" =~ [a-zA-Z0-9]+$ && "$auth" == "yes" ]]'
+    '[[ "$value" =~ [a-zA-Z0-9]+$ && "$auth" == "yes" ]]'
+)
 
-reqReader[1]() { 
-    while [[ ! ${values[1]} =~ [0-9]:[0-9]+$ || -z "${values[1]}" ]];
-    do 
-        read -p "Enter port on which this registry is to be run : " values[1]; 
-    done
-}
+commands=(
+    'mv $tempdir "$value";'
+    'echo -e "docker run -d -p $port --restart=always --name $name" >> $name/executor.txt;'
+    'if [[ "(y ye yes)" =~ ${value,,} ]]; then cert="yes"; bash $cpath/create_cert.sh $name; else cert="no"; fi'
+    'if [[ "(y ye yes)" =~ ${value,,} ]]; then auth="yes"; else auth="no"; fi'
+    ''
+    'bash $cpath/create_auth.sh $name $username $password'
+)
 
-reqReader[2]() {
-    while [[ ! "(0 1)" =~ "${values[2]}" || -z "${values[2]}" ]];
-    do
-        read -p "Get certificate of this registry ? (y/n) : " values[2]
-        yn=${values[2],,}
-        
-        if [[ "$yn" == "y" || "$yn" == "ye" || "$yn" == "yes" ]]; then values[2]=1; break;
-        elif [[ "$yn" == "n" || "$yn" == "no" ]]; then values[2]=0; break;
-        else continue; fi
-    done
-}
 
-reqReader[3]() {
-    while [[ ! "(0 1)" =~ "${values[3]}" || -z "${values[3]}" ]];
-    do
-        read -p "Want to assign password to this registry ? (y/n) : " values[3]
-        yn=${values[3],,}
-
-        if [[ "$yn" == "y" || "$yn" == "ye" || "$yn" == "yes" ]]; then values[3]=1; break;
-        elif [[ "$yn" == "n" || "$yn" == "no" ]]; then values[3]=0; break;
-        else continue; fi
-    done
-}
-
-reqReader[4]() {
-    while [[ ${values[3]} == 1 && -z "${values[4]}" ]];
-    do
-        read -p "Enter username : " values[4]; 
-    done
-}
-
-reqReader[5]() {
-    while [[ ${values[3]} == 1 && -z "${values[5]}" ]];
-    do
-        read -p "Enter password : " values[5]; 
-    done
-}
-
-args=($@) 
-for i in "${!args[@]}"; do
-    if [[ "${args[i]}" == "-i"  ]]; then 
-        keys=("${keys[@]:${#args[@]}-i-1:${#keys[@]}}");
-        values=("${values[@]:${#args[@]}-i-1:${#values[@]}}");
-        values=("${args[@]:1:${#args[@]}}" "${values[@]}");
-        echo ${keys[@]} ${values[@]}
-    fi 
+for i in ${!keys[@]}; 
+do
+    value=$(grep -x "${keys[i]}.*" details.txt | tail -1 | sed 's/ //g' | tr "=>" " " | cut -d " " -f 2)
+    until eval ${conditions[i]}; do read -p "Enter ${keys[i]} : " value; done
+    eval "${keys[i]}=$value"
+    eval ${commands[i]}
 done
 
-bash $cpath/filereader.sh ${keys[@]}
-for i in ${!values[@]}; do echo ${values[i]}; done
-for i in $(seq ${#values[@]}); do "reqReader[$((i-1))]"; done
-
-name=${values[0]}; port=${values[1]}; cert=${values[2]}; auth=${values[3]}; username=${values[4]}; password=${values[5]}
-
-mkdir $name
-touch $name/data.txt
-echo -e "name => $name\nport => $port\ncert => $cert\nauth => $auth\nuser => $username\npass => $password" >> $name/data.txt
-
-executor="
-    docker run -d 
-    -p $port 
-    --restart=always 
-    --name $name
-"
-
-if [[ "$cert" == "1" ]];then
-
-    touch $name/certdetails.txt
-    echo -e "\n\n\n\n\n\n" >> $name/certdetails.txt
-
-    bash $cpath/create_cert.sh $name < $name/certdetails.txt
-    rm $name/certdetails.txt
-
-    executor="
-        $executor
-        -v "$(pwd)"/$name/certs:/certs \
-        -e REGISTRY_HTTP_TLS_CERTIFICATE=$name/certs/dockerRegistry.crt \
-        -e REGISTRY_HTTP_TLS_KEY=$name/certs/dockerRegistry.key \"
-    "
-fi
-
-if [[ "$auth" == "1" ]]; then
-    mkdir $name/auth
-    docker run --entrypoint htpasswd httpd:2 -Bbn $username $password > $name/auth/htpasswd
-
-    executor="
-        $executor
-        -v "$(pwd)"/$name/certs:/certs \
-        -e REGISTRY_HTTP_TLS_CERTIFICATE=$name/certs/domain.crt \
-        -e REGISTRY_HTTP_TLS_KEY=$name/certs/domain.key \"
-    "
-fi
-
-executor="
-    $executor
-    registry
-"
-
-echo $executor
+echo -e "name = $name\nport = $port\ncert = $cert\nauth = $auth\nusername = $username\npassword = $password" >> $name/data.txt
+echo -e "registry" >> $name/executor.txt
