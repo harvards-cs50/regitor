@@ -10,9 +10,9 @@ createCert(){
 
 createCert $1 < $1/certdetails.txt
 
-echo -e "-v "$(pwd)"/certs:/certs \\
--e REGISTRY_HTTP_TLS_CERTIFICATE=$1/certs/dockerRegistry.crt \\
--e REGISTRY_HTTP_TLS_KEY=$1/certs/dockerRegistry.key \\" >> $1/executor.sh
+echo -e "  -v "$(pwd)"/certs:/certs \\
+  -e REGISTRY_HTTP_TLS_CERTIFICATE=$1/certs/dockerRegistry.crt \\
+  -e REGISTRY_HTTP_TLS_KEY=$1/certs/dockerRegistry.key \\" >> $1/executor.sh
 
 rm $1/certdetails.txt
 echo certificate created
