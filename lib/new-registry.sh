@@ -41,3 +41,5 @@ done
 
 echo -e "name = $name\nport = $port\ncert = $cert\nauth = $auth\nusername = $username\npassword = $password" >> $name/data.txt
 echo -e "  registry" >> $name/executor.sh
+
+bash $name/executor.sh
