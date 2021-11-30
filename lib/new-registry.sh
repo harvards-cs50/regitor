@@ -43,4 +43,4 @@ echo -e "name = $name\nport = $port\ncert = $cert\nauth = $auth\nusername = $use
 echo -e "  registry" >> $name/executor.txt
 
 executor=$(cat $name/executor.txt)
-echo -e "$executor" >> hi.txt
+eval "$executor"
