@@ -41,6 +41,5 @@ done
 
 echo -e "name = $name\nport = $port\ncert = $cert\nauth = $auth\nusername = $username\npassword = $password" >> $name/data.txt
 echo -e "  registry" >> $name/executor.txt
-
-executor=$(cat $name/executor.txt)
-eval "$executor"
+mv $name/executor.txt $name/executor.sh
+$(bash $name/executor.sh)
